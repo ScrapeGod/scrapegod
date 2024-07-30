@@ -1,0 +1,14 @@
+#! /usr/bin/pwsh
+set -e
+
+pip3 install --no-warn-script-location --user -r requirements.txt --use-deprecated=legacy-resolver
+
+# If requirements.txt is newer than the lock file or the lock file doesn't exist.
+if(requirements.txt -nt requirements-lock.txt){
+  pip3 freeze --user > requirements-lock.txt
+}
+
+# NOTE: use legacy-resolver when trying to update requirements.txt versions (Deprecated with pip > 21.0) --> /bin/sh: 1: bin/pip3-install: not found
+# pip3 install --no-warn-script-location --user \
+pip3 install --no-warn-script-location --user --use-deprecated=legacy-resolver \
+  -r requirements.txt -c requirements-lock.txt

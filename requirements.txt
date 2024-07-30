@@ -1,0 +1,8 @@
+Flask
+requests
+beautifulsoup4
+celery
+python-dotenv
+redis
+SQLAlchemy
+gunicorn

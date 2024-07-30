@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <title>Amazon scraper</title>
+</head>
+<body>
+ <h1>Amazon scraper</h1>
+ <form action="/" method="get">
+    <label for="url">Enter Amazon Product URL:</label>
+    <input type="text" id="url" name="url" required>
+    <button type="submit">Scrape</button>
+</form>
+
+ <ul>
+    {% for data in scraped_data %}
+    <li>{{ data }}</li>
+    {% endfor %}
+
+ </ul>
+</body>
+</html>
