@@ -6,3 +6,4 @@ python-dotenv
 redis
 SQLAlchemy
 gunicorn
+flask_cors

@@ -85,10 +85,10 @@ def scrap_amazon(URL=None):
         soup = BeautifulSoup(webpage.content, "html")
 
         # Function calls to display all necessary product information
-        return [
-			"Product Title ="+ get_title(soup), 
-			"Product Price ="+get_price(soup), 
-			"Product Rating ="+get_rating(soup), 
-			"Number of Product Reviews ="+get_review_count(soup), 
-			"Availability ="+ get_availability(soup)
-		]
+        return {
+			"Product Title": get_title(soup), 
+			"Product Price":get_price(soup), 
+			"Product Rating":get_rating(soup), 
+			"Number of Product Reviews":get_review_count(soup), 
+			"Availability":get_availability(soup)
+		}

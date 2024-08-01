@@ -3,6 +3,7 @@ from flask import Flask
 from scrapegod.scrapers import scraper
 from celery import Celery
 from werkzeug.debug import DebuggedApplication
+from flask_cors import CORS
 
 def create_app(settings_override=None):
     """
@@ -18,6 +19,7 @@ def create_app(settings_override=None):
 
     app.config.from_object("config.settings")
     app.register_blueprint(scraper)
+    CORS(app)
 
     if settings_override:
         app.config.update(settings_override)
