@@ -33,7 +33,7 @@ IO_DOMAIN = os.getenv(
     "IO_DOMAIN", "localhost:{}".format(os.getenv("DOCKER_WEB_PORT", "8000"))
 )
 
-
+CACHE_THRESHOLD = 8000
 # SQLAlchemy.
 SESSION_COOKIE_SECURE = False
 pg_user = os.getenv("POSTGRES_USER", "postgres")

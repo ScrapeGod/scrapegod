@@ -20,4 +20,4 @@ def extract_free_proxies():
     with concurrent.futures.ThreadPoolExecutor() as executor:
             executor.map(extract, proxylist)
 
-#extract_free_proxies()
+extract_free_proxies()

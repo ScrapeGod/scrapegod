@@ -1,4 +1,23 @@
 Flask
+Flask-JWT-Extended
+Flask-REST-JSONAPI
+Flask-RESTful
+flask-shell-ipython
+Flask-SQLAlchemy
+Flask-WTF
+# Extensions.
+flask-debugtoolbar
+Flask-Mail
+Flask-Login
+Flask-Limiter
+Flask-Babel
+Flask-Static-Digest
+Flask-Secrets
+Flask-DB
+Flask-Caching
+flask-cors
+flask-sitemap
+flask-oauthlib
 requests
 beautifulsoup4
 celery
@@ -6,4 +25,4 @@ python-dotenv
 redis
 SQLAlchemy
 gunicorn
-flask_cors
+alembic
