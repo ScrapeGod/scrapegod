@@ -13,6 +13,7 @@ from scrapegod.extensions import (
     flask_static_digest,
     jwt,
     login_manager,
+    bcrypt,
     #api,
     mail, 
     flask_restful_api
@@ -88,19 +89,11 @@ def extensions(app):
     mail.init_app(app)
     csrf.init_app(app)
     db.init_app(app)
+    bcrypt.init_app(app)
     #api.init_app(app)
     flask_restful_api.init_app(app)
     jwt.init_app(app)
     login_manager.init_app(app)
-    if "host" not in app.config.get("SERVER_NAME"):
-        sentry_sdk.init(
-            dsn="https://d56637c2cf0c470ab4a8ceb586913b7d@o405390.ingest.sentry.io/5270914",
-            integrations=[FlaskIntegration(), CeleryIntegration()],
-            # Set traces_sample_rate to 1.0 to capture 100%
-            # of transactions for performance monitoring.
-            # We recommend adjusting this value in production,
-            traces_sample_rate=1.0,
-        )
     cors.init_app(app)
     ext.init_app(app=app)
     flask_static_digest.init_app(app)

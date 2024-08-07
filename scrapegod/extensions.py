@@ -10,7 +10,7 @@ from flask_sitemap import Sitemap
 from flask_sqlalchemy import SQLAlchemy
 from flask_static_digest import FlaskStaticDigest
 from flask_wtf import CSRFProtect
-
+from flask_bcrypt import Bcrypt
 from config import settings
 from config.settings import REDIS_URL
 from lib.sqlalchemy_base_class import ScrapegodModelBaseClass
@@ -22,6 +22,7 @@ db = SQLAlchemy(model_class=ScrapegodModelBaseClass)
 #api = Api()
 flask_restful_api = FlaskRestfulApi(decorators=[csrf.exempt])
 login_manager = LoginManager()
+bcrypt = Bcrypt()
 cors = CORS(supports_credentials=True)
 ext = Sitemap()
 flask_static_digest = FlaskStaticDigest()
