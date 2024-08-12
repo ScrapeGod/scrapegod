@@ -51,8 +51,6 @@ import uuid
 from datetime import datetime, date
 from decimal import Decimal
 
-from xero_python.api_client.serializer import serialize
-
 
 class JSONEncoder(json.JSONEncoder):
     def default(self, o):

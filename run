@@ -1,0 +1,289 @@
+#!/usr/bin/env bash
+source .env
+
+set -euo pipefail
+
+DC="${DC:-exec}"
+APP_NAME="${APP_NAME:-scrapegod}"
+
+# If we're running in CI we need to disable TTY allocation for docker-compose
+# commands that enable it by default, such as exec and run.
+TTY=""
+if [[ ! -t 1 ]]; then
+  TTY="-T"
+fi
+
+# -----------------------------------------------------------------------------
+# Helper functions start with _ and aren't listed in this script's help menu.
+# -----------------------------------------------------------------------------
+
+function _dc {
+  docker-compose "${DC}" ${TTY} "${@}"
+}
+
+function _build_run_down {
+  docker-compose build
+  docker-compose run ${TTY} "${@}"
+  docker-compose down
+}
+
+# -----------------------------------------------------------------------------
+
+function cmd {
+  # Run any command you want in the web container
+  _dc scrapegod "${@}"
+}
+
+function flask {
+  # Run any Flask commands
+  cmd flask "${@}"
+}
+
+# ----- dbshare
+# 1) new_keys, and add to gitignore 2) admin adds to allowed_users, 3) load_structure, 4) load_fake_data
+
+function load_structure {
+    flask sharing load-structure 167.71.200.214 5055 # 167.71.200.214 5055
+    # where scrapegod_scrapegod_1 is the container name
+    docker cp $scrapegod_CONTAINER_NAME_LOCAL:/tmp/structure.sql ./
+}
+
+function load_fake_data {
+    flask sharing load-data 167.71.200.214 5055 # 167.71.200.214 5055
+    docker cp $scrapegod_CONTAINER_NAME_LOCAL:/tmp/fake_data.sql ./
+}
+
+function set_kinde_id_local {
+  flask dashboard kinde-dev
+}
+
+function new_keys {
+    flask sharing new-keypair
+}
+
+function print_key {
+    flask sharing public-key
+}
+
+# --------------------------------------------------------------------
+
+function flake8 {
+  # Lint Python code with flake8
+  cmd flake8 "${@}"
+}
+
+function pytest {
+  # Run test suite with pytest
+  cmd pytest test/ "${@}"
+}
+
+function pytest-cov {
+  # Get test coverage with pytest-cov
+  cmd pytest --cov test/ --cov-report term-missing "${@}"
+}
+
+function bash {
+  # Start a Bash session in the web container
+  cmd bash "${@}"
+}
+
+function psql {
+  # Connect to PostgreSQL with psql
+ _dc postgres psql -U "${APP_NAME}" "${@}"
+}
+
+function redis-cli {
+  # Connect to Redis with redis-cli
+  _dc redis redis-cli "${@}"
+}
+
+function pip3:install {
+  # Install pip3 dependencies and write lock file
+  _build_run_down scrapegod bin/pip3-install
+}
+
+function pip3:outdated {
+  # List any installed packages that are outdated
+  cmd pip3 list --outdated
+}
+
+function yarn:install {
+  # Install yarn dependencies and write lock file
+  _build_run_down webpack yarn install
+}
+
+function yarn:outdated {
+  # List any installed packages that are outdated
+  _dc webpack yarn outdated
+}
+
+function clean {
+  # Remove cache and other machine generates files
+  rm -rf .pytest_cache/ .webpack_cache/ public/* .coverage celerybeat-schedule
+  touch public/.keep
+}
+
+function ci:install-deps {
+  # Install Continuous Integration (CI) dependencies
+  sudo apt-get install -y curl shellcheck
+  sudo curl \
+    -L https://raw.githubusercontent.com/nickjj/wait-until/v0.1.2/wait-until \
+    -o /usr/local/bin/wait-until && sudo chmod +x /usr/local/bin/wait-until
+}
+
+function ci:test {
+  # Execute Continuous Integration (CI) pipeline
+  #
+  # It's expected that your CI environment has these tools available:
+  #   - https://github.com/koalaman/shellcheck
+  #   - https://github.com/nickjj/wait-until
+  shellcheck run bin/*
+
+  cp --no-clobber .env.example .env
+  cp --no-clobber docker-compose.override.yml.example docker-compose.override.yml
+
+  docker-compose build
+  docker-compose up -d
+
+  # shellcheck disable=SC1091
+  . .env
+  wait-until "docker-compose exec -T \
+    -e PGPASSWORD=${POSTGRES_PASSWORD} postgres \
+    psql -U ${POSTGRES_USER} ${POSTGRES_USER} -c 'SELECT 1'"
+
+  flake8 "${@}"
+  flask db reset --with-testdb
+  pytest "${@}"
+}
+
+function help {
+  printf "%s <task> [args]\n\nTasks:\n" "${0}"
+
+  compgen -A function | grep -v "^_" | cat -n
+
+  printf "\nExtended help:\n  Each task has comments for general usage\n"
+}
+
+function seed_db {
+  docker-compose exec scrapegod flask db init
+  # If db already exists, use line below
+  # docker-compose exec scrapegod flask db drop-all
+
+  #copy dump in docker container
+  # gunzip $POSTGRES_DB.sql.gz
+  docker cp ./$POSTGRES_DB.sql $DB_CONTAINER_NAME_LOCAL:/
+
+  #restore backup on local server
+  docker exec -t -e PGPASSWORD=$POSTGRES_PASSWORD_LOCAL $DB_CONTAINER_NAME_LOCAL psql -h 127.0.0.1 -p 5432 -U $COMPOSE_PROJECT_NAME -d $POSTGRES_DB_LOCAL -f ./$POSTGRES_DB.sql
+  if [ $? -ne 0 ]; then
+    echo "error database restore"
+    exit 1
+  else
+    echo success;
+  fi
+
+}
+
+function db_operation_for_test {
+  docker cp ./scrapegod_backup_test_insert.sql scrapegod-postgres-1:/
+  docker compose exec scrapegod flask admin drop-all
+  docker exec -t -e PGPASSWORD=password scrapegod-postgres-1 psql -h 127.0.0.1 -p 5432 -U scrapegod -d scrapegod -f ./scrapegod_backup_test_insert.sql
+  docker compose exec scrapegod alembic upgrade head
+  docker exec -t -e PGPASSWORD=password scrapegod-postgres-1 pg_dump -h 127.0.0.1 -p 5432 -U scrapegod -d scrapegod --insert > scrapegod_backup_test_insert.sql
+}
+
+function reset_db {
+  # docker-compose exec scrapegod flask db init
+  # If db already exists, use line below
+  docker-compose exec scrapegod flask admin drop-all
+
+  #copy dump in docker container
+  # gunzip $POSTGRES_DB.sql.gz
+  docker cp ./$POSTGRES_DB.sql $DB_CONTAINER_NAME_LOCAL:/
+
+  #restore backup on local server
+  docker exec -t -e PGPASSWORD=$POSTGRES_PASSWORD_LOCAL $DB_CONTAINER_NAME_LOCAL psql -h 127.0.0.1 -p 5432 -U $COMPOSE_PROJECT_NAME -d $POSTGRES_DB_LOCAL -f ./$POSTGRES_DB.sql
+  if [ $? -ne 0 ]; then
+    echo "error database restore"
+    exit 1
+  else
+    echo success;
+  fi
+
+  docker-compose exec scrapegod alembic upgrade head
+
+}
+
+function syncdb {
+  # From pgadmin
+  # C:\Program Files\pgAdmin 4\v4\runtime\pg_dump.exe --file "C:\\Projects\\scrapegod\\scrapegod\\scrapegod.sql" --host "127.0.0.1" --port "58596" --username "scrapegod" --no-password --verbose --format=t --blobs "scrapegod"
+
+  # pg_dump -U postgres -t t1 db1 | psql -U postgres -d db2
+
+  # A second method of using COPY (with the benefit that it would work even if the two dbs were on different servers): psql db1 -c 'COPY (SELECT * FROM t1) TO stdout' | psql db2 -c 'COPY t2 FROM stdin'
+
+  # Pulling data from localhost from production
+  # ssh 167.71.200.214 "pg_dump -C postgres | bzip2" | bunzip2 | psql postgres
+  # cd /var/git/scrapegod/ needed
+  ssh 167.71.200.214 "docker-compose exec -T postgres psql -U scrapegod pg_dump -C postgres | bzip2" | bunzip2 | psql postgres
+
+  # pg_dump -C -h localhost -U localuser dbname | psql -h remotehost -U remoteuser dbname
+  # pg_dump -C -h remotehost -U remoteuser dbname | psql -h localhost -U localuser dbname
+  # Compressed version
+  # pg_dump -C dbname | bzip2 | ssh  remoteuser@remotehost "bunzip2 | psql dbname"
+  # pg_dump -C dbname | ssh -C remoteuser@remotehost "psql dbname"
+
+  # REMOTE_HOST="user@www.domain.com"
+  # REMOTE_MYSQL_HOST="localhost"
+  # REMOTE_MYSQL_DB="remote_db_name"
+  # REMOTE_MYSQL_USER="remote_db_user"
+  # REMOTE_MYSQL_PASS="remote_db_pass"
+  # REMOTE_BASE_URL="remote.host.com"
+  # LOCAL_MYSQL_HOST="localhost"
+  # LOCAL_MYSQL_DB="local_db_name"
+  # LOCAL_MYSQL_USER="local_db_user"
+  # LOCAL_MYSQL_PASS="local_db_pass"
+  # LOCAL_BASE_URL="www.domain.local"
+
+  # if [[ `ssh $REMOTE_HOST 'test -e ~/'$REMOTE_MYSQL_DB'.tmp.sql && echo exists'` == *exists* ]]; then
+  #   echo "Backup is currently being executed by another process. Please try again in a few moments."
+  #   exit 1
+  # fi
+
+  # echo "Creating backup of remote database"
+  # ssh $REMOTE_HOST 'mysqldump -h '$REMOTE_MYSQL_HOST' -u '$REMOTE_MYSQL_USER' -p'$REMOTE_MYSQL_PASS' '$REMOTE_MYSQL_DB' > ~/'$REMOTE_MYSQL_DB'.tmp.sql' &> /dev/null
+  # ssh $REMOTE_HOST 'tar -czf '$REMOTE_MYSQL_DB'.tmp.sql.tar.gz '$REMOTE_MYSQL_DB'.tmp.sql' &> /dev/null
+
+  # echo "Transferring backup from remote to local"
+  # scp $REMOTE_HOST:~/$REMOTE_MYSQL_DB.tmp.sql.tar.gz ~/
+  # ssh $REMOTE_HOST 'rm ~/'$REMOTE_MYSQL_DB'.tmp*'
+
+  # echo "Extracting backup"
+  # tar -xzf ~/$REMOTE_MYSQL_DB.tmp.sql.tar.gz -C ~/
+  # echo "Updating config"
+  # sed "s/$REMOTE_BASE_URL/$LOCAL_BASE_URL/g" ~/$REMOTE_MYSQL_DB.tmp.sql > ~/$REMOTE_MYSQL_DB.tmp.new.sql
+  # echo "Reloading local database (may take few moments)"
+  # mysql -u $LOCAL_MYSQL_USER -h $LOCAL_MYSQL_HOST -p$LOCAL_MYSQL_PASS $LOCAL_MYSQL_DB < ~/$REMOTE_MYSQL_DB.tmp.new.sql &> /dev/null
+
+  # # Clean local temp files
+  # rm ~/$REMOTE_MYSQL_DB.tmp*
+
+  echo "Complete!"
+}
+
+
+
+function find_dead_code {
+  # Find dead code with vulture
+  docker-compose exec scrapegod vulture scrapegod/ --min-confidence 70 > vulture-report.txt
+  printf "See vulture-report.txt on root folder"
+}
+
+function format {
+  cmd echo "Formatting Python files with black"
+  cmd black .
+}
+
+# This idea is heavily inspired by: https://github.com/adriancooney/Taskfile
+TIMEFORMAT=$'\nTask completed in %3lR'
+time "${@:-help}"

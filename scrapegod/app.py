@@ -1,6 +1,7 @@
 import logging
 from flask import Flask
 from scrapegod.scrapers import scraper
+from scrapegod.blueprints.user import user
 from celery import Celery
 from werkzeug.debug import DebuggedApplication
 from flask_cors import CORS
@@ -16,7 +17,7 @@ from scrapegod.extensions import (
     bcrypt,
     #api,
     mail, 
-    flask_restful_api
+    flask_restful_api,
 )
 def create_app(settings_override=None):
     """
@@ -31,9 +32,9 @@ def create_app(settings_override=None):
     app = Flask(__name__)
 
     app.config.from_object("config.settings")
+    app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
     app.register_blueprint(scraper)
-    CORS(app)
-
+    app.register_blueprint(user)
     if settings_override:
         app.config.update(settings_override)
 
@@ -88,7 +89,7 @@ def extensions(app):
     cache.init_app(app)
     mail.init_app(app)
     csrf.init_app(app)
-    db.init_app(app)
+    
     bcrypt.init_app(app)
     #api.init_app(app)
     flask_restful_api.init_app(app)
@@ -97,6 +98,8 @@ def extensions(app):
     cors.init_app(app)
     ext.init_app(app=app)
     flask_static_digest.init_app(app)
+    db.init_app(app)
+    
 
     return None
 

@@ -1,0 +1,103 @@
+# version: '3.9'
+version: "3.6"
+services:
+
+  postgres:
+    image: "postgres:12.1"
+    env_file:
+      - ".env"
+    ports:
+      - "5432:5432" # removed 127.0.0.1: - adding firewalls in iptables
+
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      # - /opt/ghost_postgres:/var/lib/postgres
+    networks:
+      - esnet
+    # command: --single -D /var/lib/postgresql/data
+
+
+  redis:
+    image: redis:6.2.3-alpine
+    command: redis-server --appendonly yes --requirepass splendidponchodesire
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+    # stop_grace_period: "${DOCKER_STOP_GRACE_PERIOD:-3s}"
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis:/var/lib/redis/data
+      - ./redis-volume:/data
+    networks:
+      - esnet
+
+  sharingserver:
+    build: ./sharingserver
+    env_file:
+      - ".env"
+    ports:
+      - "5055:8080"
+    volumes:
+      - ./sharingserver/config:/home/dbuser/config
+    networks:
+      - esnet
+
+
+  scrapegod:
+    build:
+      context: "."
+      args:
+        - "FLASK_ENV=${FLASK_ENV:-production}"
+        - "NODE_ENV=${NODE_ENV:-production}"
+    command: ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "flask", "run", "--host=0.0.0.0", "--port=8000"]
+    depends_on:
+      - "postgres"
+      - "redis"
+    env_file:
+      - ".env"
+    ports:
+      - 0.0.0.0:8000:8000
+      - 5678:5678
+    environment:
+      - FLASK_DEBUG=1
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+    # stop_grace_period: "${DOCKER_STOP_GRACE_PERIOD:-3s}"
+    volumes:
+      # - .:/app
+      - "${DOCKER_WEB_VOLUME:-./public:/app/public}"
+    tty: true
+    networks:
+      - esnet  
+
+
+  celery:
+    build:
+      context: "."
+      args:
+        - "FLASK_ENV=${FLASK_ENV:-production}"
+        - "NODE_ENV=${NODE_ENV:-production}"
+
+  # NOTE: concurrency should be increased once we run celery on a server with > 4-5 CPUs
+    command: [ "python", "-m", "debugpy", "--listen", "0.0.0.0:5679", "--wait-for-client", "-m", "celery", "-A", "scrapegod.app.celery_app", "worker", "-B", "-l", "${CELERY_LOG_LEVEL:-info}", "--concurrency", "5" ]
+    env_file:
+      - ".env"
+    depends_on:
+      - "postgres"
+      - "redis"
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+
+    volumes:
+      - "${DOCKER_WEB_VOLUME:-./public:/app/public}"
+    networks:
+      - "esnet"
+    ports:
+      - 5679:5679
+
+volumes:
+  postgres: {}
+  redis: {}
+  esdata:
+    driver: local
+
+networks:
+  esnet:

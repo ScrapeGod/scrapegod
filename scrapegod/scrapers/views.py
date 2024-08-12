@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, jsonify
 from scrapegod.scrapers.amazon import scrap_amazon
 
 scraper = Blueprint(
-    "scraper", __name__, template_folder='templates', url_prefix="/"
+    "scraper", __name__
 )
 
 @scraper.route("/amazon/scrape", methods=["POST", "GET"])
