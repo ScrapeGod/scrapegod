@@ -33,6 +33,7 @@ def create_app(settings_override=None):
 
     app.config.from_object("config.settings")
     app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
+    extensions(app)
     app.register_blueprint(scraper)
     app.register_blueprint(user)
     if settings_override:

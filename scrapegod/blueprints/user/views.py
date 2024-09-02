@@ -3,18 +3,23 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from scrapegod.blueprints.user.models import User
 import jwt
 from scrapegod import app
-from scrapegod.extensions import db, bcrypt
+from scrapegod.extensions import db, bcrypt, csrf
 from flask_login import login_user, logout_user, current_user, login_required
 from functools import wraps
 user = Blueprint('user', __name__)
 
 @user.route("/register", methods=['POST'])
+@csrf.exempt
 def register():
     data = request.get_json()
+    # Check if the email already exists
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify(message="Email already in use"), 400
     hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
     user = User(username=data['username'], email=data['email'], password=hashed_password)
     db.session.add(user)
     db.session.commit()
+    print(data)
     return jsonify(message="User registered sucessfully"), 201
 
 @user.route("/login", methods=['GET', 'POST'])
@@ -47,6 +52,3 @@ def get_user_info():
     current_user = get_jwt_identity()
     return jsonify(current_user), 200
         
-
-
-
