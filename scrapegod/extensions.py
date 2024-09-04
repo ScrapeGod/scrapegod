@@ -14,6 +14,7 @@ from flask_bcrypt import Bcrypt
 from config import settings
 from config.settings import REDIS_URL
 from lib.sqlalchemy_base_class import ScrapegodModelBaseClass
+#from flask_api_key import APIKeyManager
 
 # debug_toolbar = DebugToolbarExtension()
 mail = Mail()

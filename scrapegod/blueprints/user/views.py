@@ -15,26 +15,35 @@ def register():
     # Check if the email already exists
     if User.query.filter_by(email=data['email']).first():
         return jsonify(message="Email already in use"), 400
-    hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
-    user = User(username=data['username'], email=data['email'], password=hashed_password)
-    db.session.add(user)
-    db.session.commit()
-    print(data)
+    User.create_user(username=data['username'], email=data['email'], password=data['password'])
     return jsonify(message="User registered sucessfully"), 201
 
 @user.route("/login", methods=['GET', 'POST'])
+@csrf.exempt
 def login():
-    print("hello")
     data = request.get_json()
-    print(data)
     user = User.query.filter_by(email=data['email']).first()
     if user and bcrypt.check_password_hash(user.password, data['password']):
         access_token = create_access_token(identity={'username': user.username, 'email': user.email})
-        return jsonify(access_token=access_token), 200
+        response = jsonify({'message': 'Login successful'})
+        response.set_cookie('access_token_cookie', access_token, httponly=True, secure=False, samesite='Lax')
+        return response
     return jsonify(message="Invalid credentials"), 401
+
+@user.route('/logout', methods=['POST'])
+@jwt_required()
+@csrf.exempt
+def logout():
+    response = jsonify({'message': 'Logout successful'})
+    
+    # Remove the cookie by setting it with an expiration date in the past
+    response.set_cookie('access_token_cookie', '', expires=0, httponly=True, secure=False, samesite='Lax')
+    
+    return response
 
 @user.route('/update', methods=['PUT'])
 @jwt_required()
+@csrf.exempt
 def update():
     data = request.get_json()
     user_identity = get_jwt_identity()
@@ -48,7 +57,7 @@ def update():
 
 @user.route('/me', methods=['GET'])
 @jwt_required()
+@csrf.exempt
 def get_user_info():
     current_user = get_jwt_identity()
     return jsonify(current_user), 200
-        
