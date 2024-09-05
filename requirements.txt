@@ -14,7 +14,7 @@ Flask-Babel
 Flask-Static-Digest
 Flask-Secrets
 Flask-DB
-Flask-Bcrypt
+Flask-Argon2
 Flask-Caching
 flask-cors
 flask-sitemap

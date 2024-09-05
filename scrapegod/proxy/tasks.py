@@ -13,11 +13,12 @@ celery = create_celery_app()
 def extract_free_proxies():
 
     proxylist = getProxies()
-    #print(len(proxylist))
+    # print(len(proxylist))
 
-    #check them all with futures super quick
+    # check them all with futures super quick
     # this will automatically write free proxies to free_proxies.txt
     with concurrent.futures.ThreadPoolExecutor() as executor:
-            executor.map(extract, proxylist)
+        executor.map(extract, proxylist)
+
 
 extract_free_proxies()

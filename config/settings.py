@@ -19,6 +19,7 @@ def if_none_false_env_bool_setting(key):
 
     return value.lower() == "true"
 
+
 LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")
 
 # SECRET_KEY = os.getenv('SECRET_KEY', None)
@@ -84,16 +85,14 @@ if ".com" in SERVER_NAME:  # includes docker.host.internal
         #     Queue("celery", Exchange("tasks"), queue_arguments={"x-max-priority": 10}),
         # ],
         "include": [
-            #"scrapegod.blueprints.contact.tasks",
+            # "scrapegod.blueprints.contact.tasks",
         ],
-        
         "beat_schedule": {
-        #     "create-scrapegod-bills-rodrigo": {
-        #         "task": "scrapegod.blueprints.billing.tasks.create_scrapegod_bills",
-        #         "schedule": crontab(hour=5, minute=0),
-        #         "kwargs": {"uid": "bikash@scrapegod.com.au"},
-        #     },
-            
+            #     "create-scrapegod-bills-rodrigo": {
+            #         "task": "scrapegod.blueprints.billing.tasks.create_scrapegod_bills",
+            #         "schedule": crontab(hour=5, minute=0),
+            #         "kwargs": {"uid": "bikash@scrapegod.com.au"},
+            #     },
         },
     }
 
@@ -113,7 +112,7 @@ else:
         #     Queue("celery", Exchange("tasks"), queue_arguments={"x-max-priority": 10}),
         # ],
         "include": [
-            #"scrapegod.blueprints.contact.tasks",
+            # "scrapegod.blueprints.contact.tasks",
         ],
         "beat_schedule": {},
     }
@@ -137,7 +136,6 @@ SEND_EMAIL_IN_LOCALHOST = (
 )
 
 EMAIL_ENCRYPT_KEY = os.getenv("EMAIL_ENCRYPT_KEY", " ")
-
 
 
 # File Uploads

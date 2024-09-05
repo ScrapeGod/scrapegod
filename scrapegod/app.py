@@ -14,11 +14,13 @@ from scrapegod.extensions import (
     flask_static_digest,
     jwt,
     login_manager,
-    bcrypt,
-    #api,
-    mail, 
+    argon2,
+    # api,
+    mail,
     flask_restful_api,
 )
+
+
 def create_app(settings_override=None):
     """
     Create a Flask application using the app factory pattern.
@@ -32,7 +34,7 @@ def create_app(settings_override=None):
     app = Flask(__name__)
 
     app.config.from_object("config.settings")
-    app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
+    app.config["JWT_SECRET_KEY"] = "your_jwt_secret_key"
     extensions(app)
     app.register_blueprint(scraper)
     app.register_blueprint(user)
@@ -42,9 +44,8 @@ def create_app(settings_override=None):
     if app.debug:
         app.wsgi_app = DebuggedApplication(app.wsgi_app, evalex=True)
 
-
-
     return app
+
 
 def create_celery_app(app=None):
     """
@@ -86,13 +87,11 @@ def extensions(app):
     """
     # debug_toolbar.init_app(app)
 
-
     cache.init_app(app)
     mail.init_app(app)
     csrf.init_app(app)
-    
-    bcrypt.init_app(app)
-    #api.init_app(app)
+    argon2.init_app(app)
+    # api.init_app(app)
     flask_restful_api.init_app(app)
     jwt.init_app(app)
     login_manager.init_app(app)
@@ -100,8 +99,8 @@ def extensions(app):
     ext.init_app(app=app)
     flask_static_digest.init_app(app)
     db.init_app(app)
-    
 
     return None
+
 
 celery_app = create_celery_app()
