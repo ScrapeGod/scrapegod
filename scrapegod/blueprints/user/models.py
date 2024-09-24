@@ -1,5 +1,4 @@
 from scrapegod.extensions import login_manager, db, argon2
-from flask_login import UserMixin
 from lib.util_sqlalchemy import ResourceMixin
 import secrets
 import uuid
@@ -11,6 +10,7 @@ def load_user(user_id):
 
 
 class APIKey(db.Model, ResourceMixin):
+    __tablename__ = "api_key"
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(
         db.String(255), unique=True, nullable=False, default=lambda: str(uuid.uuid4())
@@ -27,7 +27,8 @@ class APIKey(db.Model, ResourceMixin):
         db.session.commit()
 
 
-class User(db.Model, UserMixin, ResourceMixin):
+class User(db.Model, ResourceMixin):
+    __tablename__ = "user"
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(128), index=True)
     email = db.Column(db.String(255), nullable=False, server_default="", unique=True)

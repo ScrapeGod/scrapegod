@@ -1,6 +1,5 @@
-from flask import render_template, url_for, flash, redirect, request, Blueprint, jsonify
+from flask import request, Blueprint, jsonify
 from flask_jwt_extended import (
-    JWTManager,
     create_access_token,
     jwt_required,
     get_jwt_identity,

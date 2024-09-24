@@ -27,3 +27,5 @@ redis
 SQLAlchemy
 gunicorn
 alembic
+pycountry
+rapidfuzz
