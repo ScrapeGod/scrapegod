@@ -1,7 +1,7 @@
 import logging
 from flask import Flask
-from scrapegod.scrapers import scraper
 from scrapegod.blueprints.user import user
+from scrapegod.blueprints.scraper import scraper
 from celery import Celery
 from werkzeug.debug import DebuggedApplication
 from flask_cors import CORS

@@ -34,6 +34,12 @@ def upgrade():
         ),
         sa.Column("password", sa.String(length=128), nullable=False, server_default=""),
         sa.Column(
+            "role",
+            sa.String(length=50),
+            nullable=False,
+            server_default="user",
+        ),  # Default role is 'user'    
+        sa.Column(
             "created_on",
             sa.DateTime(timezone=True),
             nullable=False,

@@ -1,4 +1,4 @@
-from flask import request, Blueprint, jsonify
+from flask import request, Blueprint, jsonify, json
 from flask_jwt_extended import (
     create_access_token,
     jwt_required,
@@ -30,7 +30,7 @@ def login():
     user = User.query.filter_by(email=data["email"]).first()
     if user and argon2.check_password_hash(user.password, data["password"]):
         access_token = create_access_token(
-            identity={"id": user.id, "username": user.username, "email": user.email}
+            identity=json.dumps({"id": user.id, "username": user.username, "email": user.email})
         )
         response = jsonify({"message": "Login successful"})
         response.set_cookie(
@@ -68,7 +68,7 @@ def logout():
 @csrf.exempt
 def update():
     data = request.get_json()
-    user_identity = get_jwt_identity()
+    user_identity = json.loads(get_jwt_identity())
     user = User.query.filter_by(email=user_identity["email"]).first()
     if user:
         user.username = data["username"] if "username" in data else user.username
@@ -86,7 +86,7 @@ def update():
 @jwt_required()
 @csrf.exempt
 def get_user_info():
-    current_user = get_jwt_identity()
+    current_user = json.loads(get_jwt_identity())
     return jsonify(current_user), 200
 
 
@@ -94,7 +94,7 @@ def get_user_info():
 @jwt_required()
 @csrf.exempt
 def generate_api_key():
-    user_id = get_jwt_identity()["id"]
+    user_id = json.loads(get_jwt_identity())["id"]
     current_user = User.query.get(user_id)
 
     if current_user:

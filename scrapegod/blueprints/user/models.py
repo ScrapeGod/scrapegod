@@ -34,7 +34,9 @@ class User(db.Model, ResourceMixin):
     email = db.Column(db.String(255), nullable=False, server_default="", unique=True)
     password = db.Column(db.String(128), nullable=False, server_default="")
     api_keys = db.relationship("APIKey", backref="user", lazy=True)
-
+    role = db.Column(
+        db.String(50), nullable=False, server_default="user"
+    )  # Default role is 'user'
     def __repr__(self):
         return f"User('{self.username}', '{self.email}')"
 

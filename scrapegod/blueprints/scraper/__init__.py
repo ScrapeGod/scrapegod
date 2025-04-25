@@ -1,0 +1,1 @@
+from scrapegod.blueprints.scraper.views import scraper
