@@ -25,9 +25,9 @@ def upgrade():
     op.create_table(
         'scraper',
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('name', sa.String(length=128), nullable=False),
+        sa.Column('name', sa.String(length=128), nullable=False, unique=True),
         sa.Column('description', sa.Text, nullable=True),
-        sa.Column('lambda_link', sa.String(length=256), nullable=False),
+        sa.Column('lambda_link', sa.String(length=256), nullable=False, unique=True),
         sa.Column('status', sa.String(length=32), nullable=True, server_default='active'),
         sa.Column(
             "created_on",

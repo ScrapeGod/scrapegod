@@ -1,13 +1,15 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required
 from scrapegod.extensions import db, csrf
 from scrapegod.blueprints.scraper.models import Scraper
 from scrapegod.blueprints.user.models import User  # Adjust the import path as needed
 from scrapegod.blueprints.scraper.decorators import role_required  # Import the decorator
 
-scraper = Blueprint('scraper', __name__, url_prefix='/scrapers')
+scraper = Blueprint('scraper', __name__, url_prefix='/scraper')
 
 # Create a new scraper (restricted to admin and staff)
-@scraper.route('/', methods=['POST'])
+@scraper.route('/create', methods=['POST'])
+@jwt_required()  # Ensure the user is authenticated
 @csrf.exempt  # Exempt from CSRF protection for API endpoints
 def create_scraper():
     data = request.get_json()
@@ -26,11 +28,13 @@ def create_scraper():
         return jsonify({'error': str(e)}), 400
 
 # Update a scraper (restricted to admin and staff)
-@scraper.route('/<int:scraper_id>', methods=['PUT'])
-@role_required('admin', 'staff')
+@scraper.route('/update/<int:scraper_id>', methods=['PUT'])
+@jwt_required()  # Ensure the user is authenticated
+@csrf.exempt  # Exempt from CSRF protection for API endpoints
 def update_scraper(scraper_id):
     data = request.get_json()
     scraper = Scraper.query.get_or_404(scraper_id)
+    print(f"Scraper found: {scraper}")
     try:
         scraper.name = data.get('name', scraper.name)
         scraper.description = data.get('description', scraper.description)
@@ -43,8 +47,9 @@ def update_scraper(scraper_id):
         return jsonify({'error': str(e)}), 400
 
 # Delete a scraper (restricted to admin and staff)
-@scraper.route('/<int:scraper_id>', methods=['DELETE'])
-@role_required('admin', 'staff')
+@scraper.route('/delete/<int:scraper_id>', methods=['DELETE'])
+@jwt_required()  # Ensure the user is authenticated
+@csrf.exempt  # Exempt from CSRF protection for API endpoints
 def delete_scraper(scraper_id):
     scraper = Scraper.query.get_or_404(scraper_id)
     try:
@@ -56,7 +61,9 @@ def delete_scraper(scraper_id):
         return jsonify({'error': str(e)}), 400
 
 # List all scrapers (accessible to all users)
-@scraper.route('/', methods=['GET'])
+@scraper.route('/scrapers', methods=['GET'])
+@jwt_required()  # Ensure the user is authenticated
+@csrf.exempt  # Exempt from CSRF protection for API endpoints
 def list_scrapers():
     scrapers = Scraper.query.all()
     return jsonify([

@@ -77,6 +77,8 @@ def update():
             if "password" in data
             else user.password
         )
+        user.role = data["role"] if "role" in data else user.role
+        user.email = data["email"] if "email" in data else user.email
         db.session.commit()
         return jsonify(message="User updated successfully"), 200
     return jsonify(message="User not found"), 404
