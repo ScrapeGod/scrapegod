@@ -1,17 +1,19 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
+from scrapegod.utils import jwt_or_api_key_required
 from scrapegod.extensions import db, csrf
 from scrapegod.blueprints.scraper.models import Scraper
 from scrapegod.blueprints.user.models import User  # Adjust the import path as needed
 from scrapegod.blueprints.scraper.decorators import role_required  # Import the decorator
 
+
 scraper = Blueprint('scraper', __name__, url_prefix='/scraper')
 
 # Create a new scraper (restricted to admin and staff)
 @scraper.route('/create', methods=['POST'])
-@jwt_required()  # Ensure the user is authenticated
+@jwt_or_api_key_required  # Allow both JWT and API key authentication
 @csrf.exempt  # Exempt from CSRF protection for API endpoints
-def create_scraper():
+def create_scraper(current_user):
     data = request.get_json()
     try:
         scraper = Scraper(
@@ -29,9 +31,9 @@ def create_scraper():
 
 # Update a scraper (restricted to admin and staff)
 @scraper.route('/update/<int:scraper_id>', methods=['PUT'])
-@jwt_required()  # Ensure the user is authenticated
+@jwt_or_api_key_required  # Ensure the user is authenticated
 @csrf.exempt  # Exempt from CSRF protection for API endpoints
-def update_scraper(scraper_id):
+def update_scraper(current_user, scraper_id):
     data = request.get_json()
     scraper = Scraper.query.get_or_404(scraper_id)
     print(f"Scraper found: {scraper}")
@@ -48,9 +50,9 @@ def update_scraper(scraper_id):
 
 # Delete a scraper (restricted to admin and staff)
 @scraper.route('/delete/<int:scraper_id>', methods=['DELETE'])
-@jwt_required()  # Ensure the user is authenticated
+@jwt_or_api_key_required  # Ensure the user is authenticated
 @csrf.exempt  # Exempt from CSRF protection for API endpoints
-def delete_scraper(scraper_id):
+def delete_scraper(current_user, scraper_id):
     scraper = Scraper.query.get_or_404(scraper_id)
     try:
         db.session.delete(scraper)
@@ -62,9 +64,9 @@ def delete_scraper(scraper_id):
 
 # List all scrapers (accessible to all users)
 @scraper.route('/scrapers', methods=['GET'])
-@jwt_required()  # Ensure the user is authenticated
+@jwt_or_api_key_required  # Ensure the user is authenticated
 @csrf.exempt  # Exempt from CSRF protection for API endpoints
-def list_scrapers():
+def list_scrapers(current_user):
     scrapers = Scraper.query.all()
     return jsonify([
         {
